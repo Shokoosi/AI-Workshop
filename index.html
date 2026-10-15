@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The $1,000 Dilemma: Stocks vs. Bitcoin — High School AI & Analytics Hackathon</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Google Fonts & Font Awesome CDN -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #060913;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    .heading-font {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-input {
+      background: rgba(8, 14, 28, 0.95);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+    }
+    .slide {
+      display: none;
+      width: 100%;
+    }
+    .slide.active {
+      display: flex;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .animate-shake {
+      animation: shake 0.4s ease-in-out;
+    }
+    /* Dynamic Allocation Slider Thumb Styling */
+    input[type=range]::-webkit-slider-thumb {
+      appearance: none;
+      -webkit-appearance: none;
+      height: 24px;
+      width: 24px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.85);
+      border: 2px solid #ffffff;
+      transition: transform 0.15s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    input[type=range]::-moz-range-thumb {
+      height: 24px;
+      width: 24px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.85);
+      border: 2px solid #ffffff;
+    }
+    /* Clean scrollbar for prompt display */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.3);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(56, 189, 248, 0.6);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-slate-950">
+
+  <!-- ==================== 1. LOGIN GATEKEEPER MODAL ==================== -->
+  <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-xl px-4 transition-opacity duration-300">
+    <div id="login-box" class="glass-card max-w-md w-full p-8 rounded-3xl shadow-2xl shadow-cyan-950/60 text-center border border-cyan-500/25 relative overflow-hidden">
+      
+      <!-- Ambient Glow Highlights -->
+      <div class="absolute -top-12 -left-12 w-32 h-32 bg-cyan-500/20 rounded-full blur-2xl pointer-events-none"></div>
+      <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl pointer-events-none"></div>
+
+      <div class="inline-flex p-3.5 rounded-2xl bg-cyan-500/10 text-cyan-400 mb-5 border border-cyan-500/30">
+        <i class="fa-solid fa-lock text-2xl"></i>
+      </div>
+      
+      <h2 class="text-2xl font-bold text-white heading-font mb-2 tracking-tight">Workshop Access Gate</h2>
+      <p class="text-slate-400 text-xs sm:text-sm mb-6 leading-relaxed">
+        Enter the workshop PIN shared by your instructor to unlock the interactive presentation and analytics lab.
+      </p>
+
+      <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <!-- Password input: strictly no hint of 1234 in UI or placeholder -->
+          <input 
+            type="password" 
+            id="pin-input" 
+            maxlength="16" 
+            placeholder="Enter Workshop PIN" 
+            class="w-full text-center tracking-widest text-lg px-5 py-3.5 rounded-xl glass-input text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 transition-all font-mono"
+            autocomplete="off"
+            autofocus
+          />
+          <p id="login-error" class="text-rose-400 text-xs mt-2.5 font-medium hidden flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span>Incorrect PIN. Please check with your instructor and try again.</span>
+          </p>
+        </div>
+        <button 
+          type="submit" 
+          class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-extrabold text-sm tracking-wide uppercase transition-all shadow-lg shadow-cyan-500/25 active:scale-[0.98] flex items-center justify-center gap-2">
+          <span>Enter Presentation</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== 2. MAIN PRESENTATION SHELL ==================== -->
+  <div id="presentation-container" class="w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col flex-1 justify-between">
+    
+    <!-- TOP UTILITY BAR -->
+    <header class="flex flex-wrap items-center justify-between pb-4 border-b border-slate-800/80 mb-4 gap-3 text-xs">
+      <div class="flex items-center gap-3">
+        <span class="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/25 font-bold tracking-wider uppercase text-[11px]">
+          STILLMAN SCHOOL OF BUSINESS
+        </span>
+        <span class="text-slate-400 font-medium hidden sm:inline flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+          AI & Financial Analytics Lab
+        </span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Direct Google Drive Dataset Link -->
+        <a 
+          href="https://drive.google.com/file/d/1Niz9kRuS0PN7mh9RE397ySyEkXe8ebbe/view?usp=sharing" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition-all font-semibold shadow-sm hover:border-emerald-400">
+          <i class="fa-solid fa-file-excel"></i>
+          <span>Download Dataset (Google Drive)</span>
+        </a>
+        <div class="px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-mono font-bold" id="slide-counter">
+          Slide 1 of 8
+        </div>
+      </div>
+    </header>
+
+    <!-- SLIDE VIEWPORT -->
+    <main class="flex-1 flex items-center justify-center my-auto">
+
+      <!-- ==================== SLIDE 1: TITLE ==================== -->
+      <section class="slide active flex-col items-center justify-center text-center py-6 w-full max-w-4xl mx-auto">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-semibold uppercase tracking-wider mb-6">
+          <i class="fa-solid fa-graduation-cap"></i>
+          <span>High School Financial Analytics Workshop</span>
+          <span class="text-slate-600">•</span>
+          <span>Prompt-to-Dashboard Hackathon</span>
+        </div>
+        
+        <h1 class="text-4xl sm:text-6xl font-extrabold text-white heading-font tracking-tight mb-5 leading-tight">
+          The <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-purple-400">$1,000 Dilemma</span>:<br>
+          Stocks vs. Bitcoin
+        </h1>
+        
+        <p class="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto mb-8 font-normal leading-relaxed">
+          How do you evaluate risk when cashing out in exactly 12 months? Harness AI, real historical price series, and linear regression to build an executive decision dashboard.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full text-left mb-8">
+          <div class="p-5 rounded-2xl glass-card border border-slate-800 hover:border-cyan-500/40 transition-all">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-cyan-400 font-mono font-bold text-xs uppercase tracking-wider">Option A</span>
+              <i class="fa-solid fa-building-columns text-cyan-400/80"></i>
+            </div>
+            <div class="text-white font-bold text-lg mb-1">100% S&P 500</div>
+            <p class="text-slate-400 text-xs leading-relaxed">US large-cap equity basket. Steady long-term upward compounding with shallow drawdown risk.</p>
+          </div>
+
+          <div class="p-5 rounded-2xl glass-card border border-slate-800 hover:border-amber-500/40 transition-all">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-amber-400 font-mono font-bold text-xs uppercase tracking-wider">Option B</span>
+              <i class="fa-brands fa-bitcoin text-amber-400/80"></i>
+            </div>
+            <div class="text-white font-bold text-lg mb-1">100% Bitcoin</div>
+            <p class="text-slate-400 text-xs leading-relaxed">High-volatility digital asset. Exponential upside coupled with punishing mid-year drawdowns.</p>
+          </div>
+
+          <div class="p-5 rounded-2xl glass-card border border-slate-800 hover:border-purple-500/40 transition-all">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-purple-400 font-mono font-bold text-xs uppercase tracking-wider">Option C</span>
+              <i class="fa-solid fa-sliders text-purple-400/80"></i>
+            </div>
+            <div class="text-white font-bold text-lg mb-1">Custom Blend</div>
+            <p class="text-slate-400 text-xs leading-relaxed">Interactive allocation slider (0% to 100%) to engineer an optimal risk-return tradeoff.</p>
+          </div>
+        </div>
+
+        <button onclick="nextSlide()" class="px-8 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-sm tracking-wide uppercase transition-all shadow-lg shadow-cyan-500/25 active:scale-95 flex items-center gap-2">
+          <span>Start Challenge</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </section>
+
+      <!-- ==================== SLIDE 2: CHALLENGE BRIEFING ==================== -->
+      <section class="slide flex-col justify-center py-6 w-full max-w-4xl mx-auto">
+        <span class="text-cyan-400 font-mono text-xs font-bold uppercase tracking-wider mb-2">The Setup</span>
+        <h2 class="text-3xl sm:text-4xl font-bold text-white heading-font mb-4">The 1-Year $1,000 Mandate</h2>
+        
+        <div class="p-6 rounded-2xl bg-gradient-to-r from-cyan-950/40 via-slate-900/70 to-purple-950/40 border border-cyan-500/30 mb-6 shadow-xl">
+          <p class="text-xl sm:text-2xl text-cyan-200 font-semibold leading-relaxed">
+            &ldquo;You receive $1,000 cash today. You must invest every single dollar immediately, and you are strictly required to liquidate 100% of your holdings in exactly 12 months.&rdquo;
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="p-5 rounded-2xl glass-card">
+            <div class="flex items-center gap-3 mb-2">
+              <span class="w-7 h-7 rounded-full bg-cyan-500/20 text-cyan-400 text-xs flex items-center justify-center font-bold">1</span>
+              <h3 class="text-white font-bold text-base">The Fixed Horizon Trap</h3>
+            </div>
+            <p class="text-slate-300 text-xs leading-relaxed">
+              Long-term investors can afford to wait out multi-year crypto winters or market corrections. But with a <strong>strict 12-month exit deadline</strong>, if your portfolio crashes -40% in Month 11, you are forced to lock in that devastating loss.
+            </p>
+          </div>
+
+          <div class="p-5 rounded-2xl glass-card">
+            <div class="flex items-center gap-3 mb-2">
+              <span class="w-7 h-7 rounded-full bg-purple-500/20 text-purple-400 text-xs flex items-center justify-center font-bold">2</span>
+              <h3 class="text-white font-bold text-base">Your Analytical Mission</h3>
+            </div>
+            <p class="text-slate-300 text-xs leading-relaxed">
+              Every group must answer: What is the most mathematically defensible allocation? Back up your thesis using 12 months of historical data and project the next 12 months with ordinary least squares linear regression.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== SLIDE 3: 3 COMPETING GROUPS ==================== -->
+      <section class="slide flex-col justify-center py-6 w-full max-w-4xl mx-auto">
+        <span class="text-cyan-400 font-mono text-xs font-bold uppercase tracking-wider mb-2">Team Strategy</span>
+        <h2 class="text-3xl sm:text-4xl font-bold text-white heading-font mb-4">3 Groups, 3 Investment Mandates</h2>
+        <p class="text-slate-300 text-sm mb-6">All groups evaluate the full dataset and slider, but each team is assigned to investigate and pitch a specific market thesis:</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="p-5 rounded-2xl glass-card border-t-4 border-t-cyan-500 flex flex-col justify-between hover:border-slate-700 transition-all">
+            <div>
+              <div class="text-xs font-mono font-bold text-cyan-400 mb-1">GROUP 1</div>
+              <h3 class="text-lg font-bold text-white mb-2">The Defenders</h3>
+              <p class="text-slate-300 text-xs leading-relaxed mb-4">
+                Investigate <strong>100% S&P 500</strong>. Focus on capital preservation, low historical drawdown (-2.4%), and steady positive monthly drift.
+              </p>
+            </div>
+            <div class="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-300 text-xs font-mono text-center font-semibold border border-cyan-500/20">
+              Primary Goal: Downside Defense
+            </div>
+          </div>
+
+          <div class="p-5 rounded-2xl glass-card border-t-4 border-t-amber-500 flex flex-col justify-between hover:border-slate-700 transition-all">
+            <div>
+              <div class="text-xs font-mono font-bold text-amber-400 mb-1">GROUP 2</div>
+              <h3 class="text-lg font-bold text-white mb-2">The Maximizers</h3>
+              <p class="text-slate-300 text-xs leading-relaxed mb-4">
+                Investigate <strong>100% Bitcoin</strong>. Scrutinize the historical -46.5% drawdown against explosive rally potential and high reward targets.
+              </p>
+            </div>
+            <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-300 text-xs font-mono text-center font-semibold border border-amber-500/20">
+              Primary Goal: Upside Growth
+            </div>
+          </div>
+
+          <div class="p-5 rounded-2xl glass-card border-t-4 border-t-purple-500 flex flex-col justify-between hover:border-slate-700 transition-all">
+            <div>
+              <div class="text-xs font-mono font-bold text-purple-400 mb-1">GROUP 3</div>
+              <h3 class="text-lg font-bold text-white mb-2">The Portfolios</h3>
+              <p class="text-slate-300 text-xs leading-relaxed mb-4">
+                Use the slider to discover the <strong>"Sweet Spot"</strong> (e.g., 75/25 or 50/50). Can blending assets capture crypto gains while shielding against ruin?
+              </p>
+            </div>
+            <div class="p-2.5 rounded-xl bg-purple-500/10 text-purple-300 text-xs font-mono text-center font-semibold border border-purple-500/20">
+              Primary Goal: Optimal Tradeoff
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== SLIDE 4: THE MATH FOUNDATION ==================== -->
+      <section class="slide flex-col justify-center py-6 w-full max-w-4xl mx-auto">
+        <span class="text-cyan-400 font-mono text-xs font-bold uppercase tracking-wider mb-2">Mathematical Modeling</span>
+        <h2 class="text-3xl sm:text-4xl font-bold text-white heading-font mb-4">Linear Regression & Drift ($y = mx + b$)</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="p-5 rounded-2xl glass-card space-y-4">
+            <h3 class="text-white font-bold text-base flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-cyan-400"></span>
+              Why Straight Lines Matter
+            </h3>
+            <p class="text-slate-300 text-xs leading-relaxed">
+              In your AI prompts, mandate <code class="text-cyan-300 bg-slate-900 px-1.5 py-0.5 rounded font-mono">tension: 0</code> in Chart.js. Without this, charting libraries apply curved Bézier splines that artificially distort linear forecasts into waves or create false downturns at endpoints.
+            </p>
+            <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-cyan-300 space-y-1">
+              <div><strong>Equation:</strong> y = m · x + b</div>
+              <div class="text-slate-400">m = Monthly Drift Rate ($/month)</div>
+              <div class="text-slate-400">b = Estimated Baseline Value ($)</div>
+            </div>
+          </div>
+
+          <div class="p-5 rounded-2xl glass-card space-y-4">
+            <h3 class="text-white font-bold text-base flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-purple-400"></span>
+              Core Metrics Every Group Must Report
+            </h3>
+            <ul class="text-xs text-slate-300 space-y-2.5">
+              <li class="flex items-start gap-2">
+                <span class="text-cyan-400 font-bold">•</span>
+                <span><strong>Slope ($m$):</strong> How many dollars per month did your portfolio gain or lose on average?</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-cyan-400 font-bold">•</span>
+                <span><strong>R-Squared ($R^2$):</strong> Goodness-of-fit. Does the trendline explain the variation, or is it random volatile noise?</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-cyan-400 font-bold">•</span>
+                <span><strong>Max Drawdown (%):</strong> The worst peak-to-trough crash your portfolio experienced during the historical year.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== SLIDE 5: WORKSHOP AGENDA & DATASET (AWARDS REMOVED) ==================== -->
+      <section class="slide flex-col justify-center py-6 w-full max-w-4xl mx-auto">
+        <span class="text-cyan-400 font-mono text-xs font-bold uppercase tracking-wider mb-2">Schedule & Materials</span>
+        <h2 class="text-3xl sm:text-4xl font-bold text-white heading-font mb-4">Workshop Agenda (40 Minutes Total)</h2>
+
+        <!-- Clean 3-Stage Agenda (Awards completely removed) -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div class="p-5 rounded-2xl glass-card border border-slate-800 text-center">
+            <div class="text-cyan-400 font-mono font-bold text-2xl mb-1">5 MIN</div>
+            <div class="text-white text-sm font-bold mb-1">Challenge Briefing</div>
+            <div class="text-slate-400 text-xs">Rules, $1,000 12-month mandate, & 3 team roles</div>
+          </div>
+          <div class="p-5 rounded-2xl glass-card border border-cyan-500/50 bg-cyan-500/10 text-center relative overflow-hidden">
+            <div class="absolute top-2 right-2 px-2 py-0.5 rounded bg-cyan-400/20 text-cyan-300 text-[10px] font-mono font-bold">CORE SPRINT</div>
+            <div class="text-cyan-300 font-mono font-bold text-2xl mb-1">30 MIN</div>
+            <div class="text-white text-sm font-bold mb-1">AI Hackathon Sprint</div>
+            <div class="text-cyan-200 text-xs">Prompt AI, parse Excel data, & build interactive dashboards</div>
+          </div>
+          <div class="p-5 rounded-2xl glass-card border border-purple-500/40 bg-purple-500/10 text-center">
+            <div class="text-purple-300 font-mono font-bold text-2xl mb-1">5 MIN</div>
+            <div class="text-white text-sm font-bold mb-1">Team Pitch Showdown</div>
+            <div class="text-purple-200 text-xs">Teams showcase dashboards, regression findings, & recommendations</div>
+          </div>
+        </div>
+
+        <div class="p-6 rounded-2xl glass-card border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <div class="text-emerald-400 text-xs font-mono font-bold uppercase tracking-wider mb-1">OFFICIAL DATASET LINK</div>
+            <h4 class="text-white font-bold text-base mb-1">Monthly Historical Prices (S&P 500 & Bitcoin)</h4>
+            <p class="text-slate-400 text-xs">Download the official Excel workbook, then attach it to your AI chat along with your prompt.</p>
+          </div>
+          <a 
+            href="https://drive.google.com/file/d/1Niz9kRuS0PN7mh9RE397ySyEkXe8ebbe/view?usp=sharing" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs uppercase tracking-wide transition-all shadow-lg shadow-emerald-500/25 shrink-0 flex items-center gap-2">
+            <i class="fa-solid fa-cloud-arrow-down text-sm"></i>
+            <span>Download Excel File</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- ==================== SLIDE 6: MASTER AI PROMPT & RECOMMENDATIONS ==================== -->
+      <section class="slide flex-col justify-center py-3 w-full max-w-4xl mx-auto">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <span class="text-cyan-400 font-mono text-xs font-bold uppercase tracking-wider">Prompt Engineering</span>
+            <h2 class="text-2xl sm:text-3xl font-bold text-white heading-font">The Hackathon Starter Prompt</h2>
+          </div>
+          <button onclick="copyMasterPrompt()" id="copy-btn" class="px-4 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 font-mono text-xs font-bold transition-all flex items-center gap-2 shadow-sm">
+            <i class="fa-regular fa-clone" id="copy-icon"></i>
+            <span id="copy-text">Copy Prompt</span>
+          </button>
+        </div>
+
+        <div class="relative rounded-2xl bg-slate-950 border border-slate-800 p-4 mb-3">
+          <pre id="prompt-code" class="text-xs text-slate-300 font-mono overflow-y-auto max-h-48 whitespace-pre-wrap leading-relaxed select-all">I have attached an Excel file containing historical monthly prices for the S&P 500 and Bitcoin.
+
+Please read the file and build a single-file interactive web dashboard using HTML, Tailwind CSS, and Chart.js to evaluate a $1,000 investment over a 24-month horizon (last 12 months history + next 12 months linear regression forecast).
+
+Requirements:
+1. Data Processing: Locate Date, S&P 500 price, and Bitcoin price. Extract the last 13 monthly points (Month 0 to Month 12). Normalize both to start at $1,000 at Month 0: Normalized(t) = 1000 * (Price(t) / Price(0)).
+2. Interactive Slider: Add an allocation slider (0% to 100%) for S&P 500 allocation with remaining in Bitcoin. Include preset buttons (100% S&P, 75/25, 50/50, 25/75, 100% BTC).
+3. Math & Regression: Fit an Ordinary Least Squares regression line (y = mx + b) over historical points. Forecast Months 13 through 24 using the formula. Calculate slope ($/month), R², and max drawdown.
+4. Chart.js Specification: Set tension: 0 on all datasets to ensure the regression forecast is laser-straight. Solid line for history (Months 0-12), dashed line for forecast (Months 12-24). Add a vertical divider at Month 12.
+5. KPI Cards: Display Month 12 Actual ($), Month 24 Forecast ($), Monthly Drift Slope ($/mo), and Max Drawdown (%).
+6. Return a single runnable index.html file.</pre>
+        </div>
+
+        <!-- Dedicated Instructor Guidance & Pro Recommendations Box -->
+        <div class="p-4 rounded-2xl glass-card border border-purple-500/30 bg-purple-950/20">
+          <div class="flex items-center gap-2 text-purple-300 font-bold text-xs uppercase tracking-wider mb-2">
+            <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
+            <span>Instructor Guidance & Pro Recommendations</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px] text-slate-300">
+            <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+              <strong class="text-cyan-300 block mb-0.5"><i class="fa-solid fa-chart-line mr-1"></i> Moving Averages:</strong>
+              Feel free to calculate a 3-month or 6-month simple or exponential moving average (SMA/EMA) to smooth out extreme crypto spikes and dips.
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+              <strong class="text-amber-300 block mb-0.5"><i class="fa-solid fa-calendar-days mr-1"></i> Seasonality & Cycles:</strong>
+              Look for seasonality patterns (e.g., Q4 rallies, "Uptober", or post-halving crypto cycle behaviors) across historical months.
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+              <strong class="text-purple-300 block mb-0.5"><i class="fa-solid fa-arrows-split-up-and-left mr-1"></i> Volatility Bands:</strong>
+              Try plotting &plusmn;1 Standard Deviation bands around your regression trendline to visualize upside and downside surprise channels.
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+              <strong class="text-emerald-300 block mb-0.5"><i class="fa-solid fa-gauge-high mr-1"></i> Metric Depth:</strong>
+              Prompt your AI to compute the Sharpe ratio, max drawdown recovery months, or downside risk capture ratios.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== SLIDE 7: 5-MINUTE PITCH RUBRIC ==================== -->
+      <section class="slide flex-col justify-center py-6 w-full max-w-4xl mx-auto">
+        <span class="text-cyan-400 font-mono text-xs font-bold uppercase tracking-wider mb-2">Evaluation</span>
+        <h2 class="text-3xl sm:text-4xl font-bold text-white heading-font mb-4">5-Minute Pitch Rubric (100 Points)</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-4 rounded-2xl glass-card border border-slate-800">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-white font-bold text-sm">1. Visual Proof & Chart Precision</span>
+              <span class="text-cyan-400 font-mono font-bold text-xs bg-cyan-500/10 px-2 py-0.5 rounded">25 pts</span>
+            </div>
+            <p class="text-slate-400 text-xs leading-relaxed">Did they implement a straight regression forecast line (<code class="text-cyan-300 font-mono">tension: 0</code>)? Is the separation between historical data and forward projection visually intuitive?</p>
+          </div>
+
+          <div class="p-4 rounded-2xl glass-card border border-slate-800">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-white font-bold text-sm">2. Mathematical Rigor</span>
+              <span class="text-cyan-400 font-mono font-bold text-xs bg-cyan-500/10 px-2 py-0.5 rounded">25 pts</span>
+            </div>
+            <p class="text-slate-400 text-xs leading-relaxed">Did they accurately report slope ($/month), $R^2$ goodness-of-fit, and maximum peak-to-trough historical drawdown?</p>
+          </div>
+
+          <div class="p-4 rounded-2xl glass-card border border-slate-800">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-white font-bold text-sm">3. 12-Month Horizon Justification</span>
+              <span class="text-cyan-400 font-mono font-bold text-xs bg-cyan-500/10 px-2 py-0.5 rounded">25 pts</span>
+            </div>
+            <p class="text-slate-400 text-xs leading-relaxed">Did they defend their allocation recommendation based on the strict 12-month exit constraint, addressing downside crash risk?</p>
+          </div>
+
+          <div class="p-4 rounded-2xl glass-card border border-slate-800">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-white font-bold text-sm">4. Innovation & Analytical Depth</span>
+              <span class="text-cyan-400 font-mono font-bold text-xs bg-cyan-500/10 px-2 py-0.5 rounded">25 pts</span>
+            </div>
+            <p class="text-slate-400 text-xs leading-relaxed">Bonus for moving averages, seasonal cyclicality, uncertainty envelopes, or creative interactive elements prompted with AI.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== SLIDE 8: LIVE INTERACTIVE LAB ==================== -->
+      <section class="slide flex-col justify-start py-2 w-full max-w-6xl mx-auto">
+        
+        <!-- Lab Header with Timer -->
+        <div class="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl glass-card border border-slate-800 mb-3">
+          <div class="flex items-center gap-3">
+            <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-white font-bold text-sm heading-font">Live Analytics Engine</span>
+            <span class="text-xs text-slate-400 font-mono hidden md:inline">Oct '25 &rarr; Oct '26 &rarr; Oct '27 (F)</span>
+          </div>
+
+          <!-- Hackathon Timer -->
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-400 uppercase font-mono font-semibold">Sprint Timer:</span>
+            <div id="timer-display" class="font-mono text-base font-extrabold text-cyan-400 bg-slate-900 px-3 py-1 rounded-lg border border-cyan-500/30 shadow-inner">
+              30:00
+            </div>
+            <button onclick="toggleTimer()" id="timer-btn" class="px-3 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-bold border border-cyan-500/30 transition-all">Start</button>
+            <button onclick="resetTimer()" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-all">Reset</button>
+          </div>
+        </div>
+
+        <!-- Slider Card -->
+        <div class="p-4 rounded-2xl glass-card border border-slate-800 mb-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div class="text-xs font-bold text-slate-300">
+              ALLOCATION: 
+              <span class="text-cyan-400 font-mono font-bold" id="slider-sp-label">50% S&P ($500)</span> | 
+              <span class="text-amber-400 font-mono font-bold" id="slider-btc-label">50% BTC ($500)</span>
+            </div>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <button onclick="setAllocation(100)" class="px-2 py-1 rounded bg-slate-800 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-400 text-[11px] font-mono border border-slate-700">100% S&P</button>
+              <button onclick="setAllocation(75)" class="px-2 py-1 rounded bg-slate-800 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-400 text-[11px] font-mono border border-slate-700">75/25</button>
+              <button onclick="setAllocation(50)" class="px-2 py-1 rounded bg-slate-800 hover:bg-purple-500/20 text-slate-300 hover:text-purple-400 text-[11px] font-mono border border-slate-700">50/50</button>
+              <button onclick="setAllocation(25)" class="px-2 py-1 rounded bg-slate-800 hover:bg-amber-500/20 text-slate-300 hover:text-amber-400 text-[11px] font-mono border border-slate-700">25/75</button>
+              <button onclick="setAllocation(0)" class="px-2 py-1 rounded bg-slate-800 hover:bg-amber-500/20 text-slate-300 hover:text-amber-400 text-[11px] font-mono border border-slate-700">100% BTC</button>
+            </div>
+          </div>
+          <input type="range" id="sp-slider" min="0" max="100" value="50" oninput="updateLab(this.value)" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+        </div>
+
+        <!-- 4 KPI Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+          <div class="p-3.5 rounded-xl glass-card border border-slate-800">
+            <div class="text-[11px] text-slate-400 font-mono mb-0.5">MONTH 12 ACTUAL</div>
+            <div class="text-lg font-bold text-white font-mono" id="kpi-m12">$953.3</div>
+            <div class="text-[11px] font-semibold" id="kpi-m12-ret">-4.7% Return</div>
+          </div>
+          <div class="p-3.5 rounded-xl glass-card border border-slate-800">
+            <div class="text-[11px] text-slate-400 font-mono mb-0.5">MONTH 24 FORECAST</div>
+            <div class="text-lg font-bold text-purple-400 font-mono" id="kpi-m24">$881.0</div>
+            <div class="text-[11px] text-slate-400 font-medium" id="kpi-m24-pace">Linear Pace</div>
+          </div>
+          <div class="p-3.5 rounded-xl glass-card border border-slate-800">
+            <div class="text-[11px] text-slate-400 font-mono mb-0.5">MONTHLY DRIFT (m)</div>
+            <div class="text-lg font-bold text-cyan-400 font-mono" id="kpi-slope">-$0.23/mo</div>
+            <div class="text-[11px] text-slate-400 font-mono" id="kpi-r2">R² = 0.00</div>
+          </div>
+          <div class="p-3.5 rounded-xl glass-card border border-slate-800">
+            <div class="text-[11px] text-slate-400 font-mono mb-0.5">MAX DRAWDOWN</div>
+            <div class="text-lg font-bold text-rose-400 font-mono" id="kpi-dd">-24.4%</div>
+            <div class="text-[11px] text-slate-400">Deepest pullback</div>
+          </div>
+        </div>
+
+        <!-- Chart Container -->
+        <div class="p-4 rounded-2xl glass-card border border-slate-800 flex-1 min-h-[300px] relative">
+          <canvas id="labChart" height="90"></canvas>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION BAR -->
+    <footer class="flex items-center justify-between pt-3 border-t border-slate-800/80 mt-3 text-xs text-slate-400">
+      <div>
+        Use <kbd class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px] border border-slate-700">←</kbd> <kbd class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px] border border-slate-700">→</kbd> or <kbd class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px] border border-slate-700">Space</kbd> to navigate
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="prevSlide()" class="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 font-medium transition-all">
+          Previous
+        </button>
+        <button onclick="nextSlide()" class="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition-all shadow-md shadow-cyan-500/20">
+          Next Slide &rarr;
+        </button>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ==================== SCRIPT LOGIC ==================== -->
+  <script>
+    // ==================== 1. AUTHENTICATION LOGIC ====================
+    function handleLogin(e) {
+      if (e) e.preventDefault();
+      var input = document.getElementById('pin-input');
+      var val = input.value.trim();
+      var errorEl = document.getElementById('login-error');
+      var box = document.getElementById('login-box');
+
+      if (val === '1234') {
+        var modal = document.getElementById('login-modal');
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(function() {
+          modal.style.display = 'none';
+        }, 300);
+        initLabChart();
+      } else {
+        errorEl.classList.remove('hidden');
+        box.classList.add('animate-shake');
+        input.value = '';
+        input.focus();
+        setTimeout(function() {
+          box.classList.remove('animate-shake');
+        }, 400);
+      }
+    }
+
+    // ==================== 2. SLIDE NAVIGATION ====================
+    var currentSlide = 0;
+    var slides = document.querySelectorAll('.slide');
+    var counter = document.getElementById('slide-counter');
+
+    function showSlide(idx) {
+      if (idx < 0) idx = 0;
+      if (idx >= slides.length) idx = slides.length - 1;
+      currentSlide = idx;
+
+      slides.forEach(function(s, i) {
+        if (i === currentSlide) {
+          s.classList.add('active');
+        } else {
+          s.classList.remove('active');
+        }
+      });
+
+      counter.textContent = 'Slide ' + (currentSlide + 1) + ' of ' + slides.length;
+      if (currentSlide === 7 && labChart) {
+        setTimeout(function() {
+          labChart.resize();
+        }, 50);
+      }
+    }
+
+    function nextSlide() { showSlide(currentSlide + 1); }
+    function prevSlide() { showSlide(currentSlide - 1); }
+
+    document.addEventListener('keydown', function(e) {
+      if (document.getElementById('login-modal').style.display === 'none' || document.getElementById('login-modal').classList.contains('pointer-events-none')) {
+        if (e.key === 'ArrowRight' || e.key === ' ') {
+          e.preventDefault();
+          nextSlide();
+        }
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          prevSlide();
+        }
+      }
+    });
+
+    // ==================== 3. PROMPT COPY HELPER ====================
+    function copyMasterPrompt() {
+      var code = document.getElementById('prompt-code').innerText;
+      
+      // Fallback-safe clipboard write
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(function() {
+          triggerCopySuccess();
+        }).catch(function() {
+          fallbackCopyText(code);
+        });
+      } else {
+        fallbackCopyText(code);
+      }
+    }
+
+    function fallbackCopyText(text) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      triggerCopySuccess();
+    }
+
+    function triggerCopySuccess() {
+      var text = document.getElementById('copy-text');
+      var icon = document.getElementById('copy-icon');
+      text.textContent = 'Copied!';
+      icon.className = 'fa-solid fa-check text-emerald-400';
+      setTimeout(function() {
+        text.textContent = 'Copy Prompt';
+        icon.className = 'fa-regular fa-clone';
+      }, 2000);
+    }
+
+    // ==================== 4. LAB MATHEMATICS & CHART.JS ====================
+    var spHist = [1000.0, 1001.3, 1000.8, 1014.4, 1005.7, 954.4, 1053.9, 1108.2, 1096.4, 1095.0, 1123.7, 1118.6, 1141.1];
+    var btcHist = [1000.0, 825.1, 798.8, 717.6, 611.5, 622.8, 696.5, 671.6, 534.5, 573.3, 717.0, 762.7, 765.4];
+    var allLabels = [
+      "Oct '25", "Nov '25", "Dec '25", "Jan '26", "Feb '26", "Mar '26", "Apr '26", "May '26", "Jun '26", "Jul '26", "Aug '26", "Sep '26", "Oct '26",
+      "Nov '26 (F)", "Dec '26 (F)", "Jan '27 (F)", "Feb '27 (F)", "Mar '27 (F)", "Apr '27 (F)", "May '27 (F)", "Jun '27 (F)", "Jul '27 (F)", "Aug '27 (F)", "Sep '27 (F)", "Oct '27 (F)"
+    ];
+
+    var labChart = null;
+
+    function initLabChart() {
+      if (labChart) return;
+      var ctx = document.getElementById('labChart').getContext('2d');
+      labChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: allLabels,
+          datasets: [
+            {
+              label: 'Selected Portfolio (Actual History)',
+              data: [],
+              borderColor: '#38bdf8',
+              backgroundColor: 'rgba(56, 189, 248, 0.12)',
+              borderWidth: 3,
+              tension: 0, // Strict linear connection (no curves)
+              fill: true,
+              pointRadius: 3.5,
+              pointBackgroundColor: '#38bdf8'
+            },
+            {
+              label: 'Linear Regression Forecast (y = mx + b)',
+              data: [],
+              borderColor: '#c084fc',
+              borderWidth: 2.5,
+              borderDash: [6, 6],
+              tension: 0, // Strict linear forecast
+              pointRadius: 3,
+              pointBackgroundColor: '#c084fc',
+              fill: false
+            },
+            {
+              label: '100% S&P 500 Benchmark',
+              data: spHist.concat(Array(12).fill(null)),
+              borderColor: 'rgba(56, 189, 248, 0.35)',
+              borderWidth: 1.5,
+              tension: 0,
+              pointRadius: 0,
+              fill: false
+            },
+            {
+              label: '100% Bitcoin Benchmark',
+              data: btcHist.concat(Array(12).fill(null)),
+              borderColor: 'rgba(251, 191, 36, 0.35)',
+              borderWidth: 1.5,
+              tension: 0,
+              pointRadius: 0,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              labels: { 
+                color: '#94a3b8', 
+                font: { family: 'Plus Jakarta Sans', size: 11 } 
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(c) {
+                  return ' ' + c.dataset.label + ': $' + (c.raw !== null ? c.raw.toFixed(1) : '');
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#64748b', font: { size: 10 } }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: {
+                color: '#64748b',
+                font: { size: 10 },
+                callback: function(v) { return '$' + v; }
+              }
+            }
+          }
+        }
+      });
+      updateLab(50);
+    }
+
+    function setAllocation(val) {
+      document.getElementById('sp-slider').value = val;
+      updateLab(val);
+    }
+
+    function updateLab(val) {
+      var spPct = parseFloat(val) / 100;
+      var btcPct = 1 - spPct;
+
+      document.getElementById('slider-sp-label').textContent = Math.round(spPct * 100) + '% S&P ($' + Math.round(spPct * 1000) + ')';
+      document.getElementById('slider-btc-label').textContent = Math.round(btcPct * 100) + '% BTC ($' + Math.round(btcPct * 1000) + ')';
+
+      // 1. Calculate blended history (Month 0 to 12)
+      var histVals = [];
+      for (var i = 0; i < 13; i++) {
+        histVals.push(spPct * spHist[i] + btcPct * btcHist[i]);
+      }
+
+      // 2. Linear Regression (x = 0 to 12)
+      var n = 13;
+      var sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+      for (var i = 0; i < n; i++) {
+        sumX += i;
+        sumY += histVals[i];
+        sumXY += i * histVals[i];
+        sumXX += i * i;
+      }
+      var slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+      var intercept = (sumY - slope * sumX) / n;
+
+      // R-squared
+      var meanY = sumY / n;
+      var ssTot = 0, ssRes = 0;
+      for (var i = 0; i < n; i++) {
+        var fi = slope * i + intercept;
+        ssTot += Math.pow(histVals[i] - meanY, 2);
+        ssRes += Math.pow(histVals[i] - fi, 2);
+      }
+      var r2 = ssTot === 0 ? 0 : Math.max(0, 1 - (ssRes / ssTot));
+
+      // Max Drawdown over historical period
+      var peak = histVals[0];
+      var maxDD = 0;
+      for (var i = 0; i < n; i++) {
+        if (histVals[i] > peak) peak = histVals[i];
+        var dd = (histVals[i] - peak) / peak;
+        if (dd < maxDD) maxDD = dd;
+      }
+
+      // 3. Forecast dataset (Month 12 to 24 connected)
+      var fcData = Array(12).fill(null);
+      for (var i = 12; i <= 24; i++) {
+        fcData.push(slope * i + intercept);
+      }
+
+      var histDataPadded = histVals.concat(Array(12).fill(null));
+
+      // Update Chart
+      if (labChart) {
+        labChart.data.datasets[0].data = histDataPadded;
+        labChart.data.datasets[1].data = fcData;
+        labChart.update();
+      }
+
+      // Update KPIs
+      var m12Val = histVals[12];
+      var m24Val = slope * 24 + intercept;
+      var m12Ret = ((m12Val - 1000) / 10).toFixed(1);
+
+      document.getElementById('kpi-m12').textContent = '$' + m12Val.toFixed(1);
+      var m12El = document.getElementById('kpi-m12-ret');
+      m12El.textContent = (m12Ret >= 0 ? '+' : '') + m12Ret + '% Return';
+      m12El.className = 'text-[11px] font-semibold ' + (m12Ret >= 0 ? 'text-emerald-400' : 'text-rose-400');
+
+      document.getElementById('kpi-m24').textContent = '$' + m24Val.toFixed(1);
+      document.getElementById('kpi-slope').textContent = (slope >= 0 ? '+$' : '-$') + Math.abs(slope).toFixed(2) + '/mo';
+      document.getElementById('kpi-r2').textContent = 'R² = ' + r2.toFixed(2);
+      document.getElementById('kpi-dd').textContent = (maxDD * 100).toFixed(1) + '%';
+    }
+
+    // ==================== 5. COUNTDOWN TIMER ====================
+    var timerSeconds = 30 * 60;
+    var timerInterval = null;
+
+    function formatTimer(s) {
+      var m = Math.floor(s / 60);
+      var sec = s % 60;
+      return (m < 10 ? '0' : '') + m + ':' + (sec < 10 ? '0' : '') + sec;
+    }
+
+    function toggleTimer() {
+      var btn = document.getElementById('timer-btn');
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        btn.textContent = 'Resume';
+        btn.className = 'px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold border border-emerald-500/30 transition-all';
+      } else {
+        btn.textContent = 'Pause';
+        btn.className = 'px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold border border-amber-500/30 transition-all';
+        timerInterval = setInterval(function() {
+          if (timerSeconds > 0) {
+            timerSeconds--;
+            document.getElementById('timer-display').textContent = formatTimer(timerSeconds);
+          } else {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            btn.textContent = "Time's Up!";
+            btn.className = 'px-3 py-1 rounded-lg bg-rose-500/20 text-rose-300 text-xs font-bold border border-rose-500/30';
+          }
+        }, 1000);
+      }
+    }
+
+    function resetTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      timerSeconds = 30 * 60;
+      document.getElementById('timer-display').textContent = '30:00';
+      var btn = document.getElementById('timer-btn');
+      btn.textContent = 'Start';
+      btn.className = 'px-3 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-bold border border-cyan-500/30 transition-all';
+    }
+  </script>
+</body>
+</html>
